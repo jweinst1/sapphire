@@ -1,0 +1,17 @@
+[package]
+name = "sapphire"
+version = "0.1.0"
+authors = ["Joshua Weinstein <jweinst1@berkeley.edu>"]
+edition = "2018"
+keywords = ["finance", "quant", "stream", "compiler", "data", "data science"]
+categories = ["science", "parsing"]
+readme = "README.md"
+description = "A stream-based programming language"
+
+
+[dependencies]
+
+
+[[bin]]
+name = "sapphire"
+path = "src/main.rs"
