@@ -25,4 +25,18 @@ impl SaphObject {
 			SaphObject::Int(num) => *num
 		}
 	}
+
+	pub fn to_bool(&self) -> bool {
+		match self {
+			SaphObject::Null => false,
+			SaphObject::Int(num) => *num == 1		
+		}
+	}
+
+	pub fn to_string(&self) -> String {
+		match self {
+			SaphObject::Null => String::from("Null"),
+			SaphObject::Int(num) => num.to_string()
+		}
+	}
 }
