@@ -1,60 +1,44 @@
 
 
 #[derive(Debug)]
-enum SaphPrsCmd {
+enum SaphTree {
 	Error(String),
-	Base,
-	GotI,
-	GotIn,
-	CmdIn
-}
-
-impl SaphPrsCmd {
-	fn digest(&mut self, ch:char) {
-		match self {
-			SaphPrsCmd::Base => match ch {
-				'i' => *self = SaphPrsCmd::GotI,
-				_ => *self = SaphPrsCmd::Error(format!("Got unexpected character '{}'", ch))
-			},
-			SaphPrsCmd::GotI => match ch {
-				'n' => *self = SaphPrsCmd::GotIn,
-				_ => *self = SaphPrsCmd::Error(format!("Expected 'n', got unexpected character '{}'", ch))
-			},
-			SaphPrsCmd::GotIn => match ch {
-				' ' | '\n' | '\t' => *self = SaphPrsCmd::CmdIn,
-				_ => *self = SaphPrsCmd::Error(format!("Expected ' ', '\\n', or '\\t', got unexpected character '{}'", ch))
-			},
-			_ => ()
-		}
-	}
-}
-
-
-#[derive(Debug)]
-enum SaphPrsArg {
-	Error(String),
-	Base,
-	GotN,
-	GotNu,
-	GotNul,
+	Stream(Vec<SaphTree>),
+	Cmd(Vec<SaphTree>),
+	CmdName(String),
+	CmdPipe,
 	Null,
-	GotIntCh(String),
 	Int(i32)
 }
 
-impl SaphPrsArg {
-	fn digest(&mut self, ch:char) {
-		match self {
-			SaphPrsArg::Base => match ch {
-				'0' ... '9' => *self = SaphPrsArg::GotIntCh(format!("{}", ch)),
-				'N' => *self = SaphPrsArg::GotN,
-				_ => *self = SaphPrsArg::Error(format!("Got unexpected character '{}' while looking for args", ch))
-			},
-			SaphPrsArg::GotN => (),
-			SaphPrsArg::GotNu => (),
-			SaphPrsArg::GotNul => (),
-			SaphPrsArg::GotIntCh(itoken) => (),
-			_ => ()
+impl SaphTree {
+
+	pub fn parse(code:&String) -> Self {
+		if code.len() == 0 {
+			return SaphTree::Null
 		}
+		SaphTree::parse_stream(&mut code.chars().peekable())
+	}
+
+	fn parse_stream(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		let mut arr:Vec<SaphTree> = vec![];
+		loop {
+			match context.peek() {
+				Some(ch) => match ch {
+					' ' | '\n' | '\t' => {
+						context.next();
+						()
+					},
+					'a' ... 'z' => arr.push(SaphTree::parse_cmd(context)),
+					_ => return SaphTree::Error(format!("Expected 'a' ... 'z', found '{}'", context.next().unwrap()))
+				},
+				None => break
+			}
+		}
+		SaphTree::Stream(arr)
+	}
+
+	fn parse_cmd(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		SaphTree::Null
 	}
 }
