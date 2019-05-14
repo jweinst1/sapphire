@@ -117,7 +117,7 @@ impl SaphTree {
 					' ' | '\n' | '\t' => break,
 					'0' ... '9' => num.push(context.next().unwrap()),
 					'.' => num.push(context.next().unwrap()),
-					')' => break,
+					')' => break, // to do call syntax
 					_ => return SaphTree::Error(format!("Expected number: '0' ... '9', found '{}'", context.next().unwrap()))
 				},
 				None => break
@@ -134,4 +134,19 @@ impl SaphTree {
 			Err(_) => return SaphTree::Error(format!("Found invalid number literal: '{}'", num))
 		}
 	}
+}
+
+#[cfg(test)]
+mod parse_tests {
+	use crate::parse::*;
+   #[test]
+   fn parse_number_works() {
+   	   let code = String::from("1004");
+   	   let mut state = code.chars().peekable();
+   	   match SaphTree::parse_number(&mut state, true) {
+   	   	   SaphTree::Number(num) => assert_eq!(num, 1004 as f32),
+   	   	   SaphTree::Error(e) => panic!("test failed got err {}", e),
+   	   	   _ => panic!("Test parse number failed")
+   	   }
+   } 
 }
