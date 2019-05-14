@@ -30,7 +30,7 @@ impl SaphTree {
 						()
 					},
 					'a' ... 'z' => arr.push(SaphTree::parse_cmd(context)),
-					_ => return SaphTree::Error(format!("Expected 'a' ... 'z', found '{}'", context.next().unwrap()))
+					_ => return SaphTree::Error(format!("Expected cmd: 'a' ... 'z', found '{}'", context.next().unwrap()))
 				},
 				None => break
 			}
@@ -39,6 +39,33 @@ impl SaphTree {
 	}
 
 	fn parse_cmd(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
-		SaphTree::Null
+		let mut arr:Vec<SaphTree> = vec![];
+		let name = SaphTree::parse_cmd_name(context);
+		// Check if name found correctly or not.
+		match name {
+			SaphTree::Error(_) => return name,
+			_ => arr.push(name)
+		}
+		/*loop {
+			match context.peek() {
+
+			}
+		}*/
+		SaphTree::Cmd(arr)
+	}
+
+	fn parse_cmd_name(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		let mut name = String::new();
+		loop {
+			match context.next() {
+				Some(ch) => match ch {
+					'a' ... 'z' => name.push(ch),
+					' ' | '\n' | '\t' => (),
+					_ => return SaphTree::Error(format!("Expected cmd_name: 'a' ... 'z', found '{}'", context.next().unwrap()))
+				},
+				None => break
+			}
+		}
+		SaphTree::CmdName(name)
 	}
 }
