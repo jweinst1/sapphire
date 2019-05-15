@@ -6,5 +6,5 @@
 /// that can allow effecient operations over a heterogenous stream.
 pub mod object;
 
-/// This module contains the parse for the Sapphire language.
+/// This module contains the parser for the Sapphire language.
 pub mod parse;
