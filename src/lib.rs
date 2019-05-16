@@ -8,3 +8,5 @@ pub mod object;
 
 /// This module contains the parser for the Sapphire language.
 pub mod parse;
+
+pub mod stream;

@@ -3,7 +3,8 @@
 /// used by Sapphire to parse through in coming stream text.
 /// ## Usage
 /// The `SaphTree` can undertake a variety of forms, each of which has different typical
-/// numbers of child nodes.
+/// numbers of child nodes. This enum can be traversed like a tree, with the `Stream`
+/// variant representing the highest level node.
 #[derive(Debug)]
 pub enum SaphTree {
 	Error(String),
@@ -16,7 +17,22 @@ pub enum SaphTree {
 }
 
 impl SaphTree {
-
+	/// The public, top level parsing function intended to be used outside this
+	/// module. It will accept a `String` object, and always return a `SaphTree`.
+	/// ## Notes
+	/// If a syntax error is found, it will return an `SaphTree::Error` variant.
+	/// If an empty string is passed as input, the function returns `SaphTree::Null`.
+	/// # Examples
+	/// You can read the message from the error like this:
+	/// ```rust
+	/// use sapphire::parse::*;
+	/// let code = String::from("5 6 3 -> out");
+	/// let result = SaphTree::parse(&code);
+	/// match result {
+    ///     SaphTree::Error(e) => println!("{}", e),
+    ///     _ => ()
+	/// }
+	/// ```
 	pub fn parse(code:&String) -> Self {
 		if code.len() == 0 {
 			return SaphTree::Null
@@ -125,7 +141,6 @@ impl SaphTree {
 					' ' | '\n' | '\t' => break,
 					'0' ... '9' => num.push(context.next().unwrap()),
 					'.' => num.push(context.next().unwrap()),
-					')' => break, // to do call syntax
 					_ => return SaphTree::Error(format!("Expected number: '0' ... '9', found '{}'", context.next().unwrap()))
 				},
 				None => break
