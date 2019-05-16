@@ -12,6 +12,7 @@ pub enum SaphTree {
 	Cmd(Vec<SaphTree>),
 	CmdName(String),
 	CmdPipe,
+	List(Vec<SaphTree>),
 	Null,
 	Number(f32)
 }
@@ -106,6 +107,13 @@ impl SaphTree {
 							_ => arr.push(num_got)
 						}
 					},
+					'(' => {
+						let lst_got = SaphTree::parse_list(context);
+						match lst_got {
+							SaphTree::Error(_) => return lst_got,
+							_ => arr.push(lst_got)
+						}
+					},
 					' ' | '\n' | '\t' => {
 						context.next();
 						()
@@ -156,6 +164,31 @@ impl SaphTree {
 			},
 			Err(_) => return SaphTree::Error(format!("Found invalid number literal: '{}'", num))
 		}
+	}
+
+	fn parse_list(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		if *context.peek() != '(' {
+			return SaphTree::Error(format!("Expected list beginner '(', got '{}'", context.next().unwrap()))
+		}
+		// consume the (
+		context.next();
+		let mut lst:Vec<SaphTree> = vec![];
+		loop {
+			match context.peek() {
+				Some(ch) => match ch {
+					' ' | '\n' | '\t'  => {
+						context.next();
+						()
+					}
+					'0' ... '9' => (),
+					'-' => (),
+					_ => return SaphTree::Error(format!("Expected list member, got '{}'", context.next().unwrap()))
+				},
+				// We shouldn't run out of chars before )
+				None => return SaphTree::Error(format!("Expected end of lsit ')', got end of input"))
+			}
+		}
+		SaphTree::List(lst)
 	}
 }
 
