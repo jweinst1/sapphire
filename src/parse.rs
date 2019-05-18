@@ -44,6 +44,12 @@ impl SaphTree {
 	}
 
 	fn parse_stream(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		match context.next() {
+			Some(ch) => if ch != '[' {
+				return SaphTree::Error(format!("Expected stream start '[', got '{}'", ch))
+			},
+			None => return SaphTree::Error(String::from("Expected stream start '[', got end of input"))
+		}
 		let mut arr:Vec<SaphTree> = vec![];
 		loop {
 			match context.peek() {
@@ -62,7 +68,11 @@ impl SaphTree {
 					'|' | '>' => {
 						context.next();
 						arr.push(SaphTree::CmdPipe);
-					}
+					},
+					']' => {
+						context.next();
+						break ()
+					},
 					_ => return SaphTree::Error(format!("Expected cmd: 'a' ... 'z', found '{}'", context.next().unwrap()))
 				},
 				None => break
@@ -116,6 +126,14 @@ impl SaphTree {
 							_ => arr.push(lst_got)
 						}
 					},
+					'[' => {
+						let stream_got = SaphTree::parse_stream(context);
+						match stream_got {
+							SaphTree::Error(_) => return stream_got,
+							_ => arr.push(stream_got)
+						}
+					},
+					']' => break, // end of stream
 					' ' | '\n' | '\t' => {
 						context.next();
 						()
@@ -149,7 +167,7 @@ impl SaphTree {
 			match context.peek() {
 				Some(ch) => match ch {
 					' ' | '\n' | '\t' => break,
-					')' => break,
+					')' | ']' => break,
 					'0' ... '9' => num.push(context.next().unwrap()),
 					'.' => num.push(context.next().unwrap()),
 					_ => return SaphTree::Error(format!("Expected number: '0' ... '9', found '{}'", context.next().unwrap()))
@@ -296,6 +314,16 @@ mod parse_tests {
    }
 
    #[test]
+   fn parse_stream_idx_works() {
+   	   let code = String::from("$10 ");
+   	   match SaphTree::parse_stream_idx(&mut code.chars().peekable()) {
+   	   	   SaphTree::StreamIdx(i) => assert_eq!(i, 10),
+   	   	   SaphTree::Error(e) => panic!("test failed got err {}", e),
+   	   	   _ => panic!("Test parse_stream_idx failed")
+   	   }
+   }
+
+   #[test]
    fn parse_cmd_name_works() {
    	   let code = String::from("map");
    	   match SaphTree::parse_cmd_name(&mut code.chars().peekable()) {
@@ -330,7 +358,7 @@ mod parse_tests {
 
    #[test]
    fn parse_stream_works() {
-   	   let code = String::from("in 4 3 2  | map 2.3");
+   	   let code = String::from("[in 4 3 2  | map 2.3]");
    	   match SaphTree::parse_stream(&mut code.chars().peekable()) {
    	   	     SaphTree::Stream(nodes) => {
    	   	     	  assert!(nodes.len() == 3);
