@@ -13,6 +13,8 @@ pub enum SaphTree {
 	CmdName(String),
 	CmdPipe,
 	List(Vec<SaphTree>),
+	StreamIdx(usize),
+	Word(String),
 	Null,
 	Number(f32)
 }
@@ -147,6 +149,7 @@ impl SaphTree {
 			match context.peek() {
 				Some(ch) => match ch {
 					' ' | '\n' | '\t' => break,
+					')' => break,
 					'0' ... '9' => num.push(context.next().unwrap()),
 					'.' => num.push(context.next().unwrap()),
 					_ => return SaphTree::Error(format!("Expected number: '0' ... '9', found '{}'", context.next().unwrap()))
@@ -167,8 +170,11 @@ impl SaphTree {
 	}
 
 	fn parse_list(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
-		if *context.peek() != '(' {
-			return SaphTree::Error(format!("Expected list beginner '(', got '{}'", context.next().unwrap()))
+		match context.next() {
+			Some(ch) => if ch != '(' {
+				return SaphTree::Error(format!("Expected list start '(', got '{}'", ch))
+			},
+			None => return SaphTree::Error(String::from("Expected list start '(', got end of input"))
 		}
 		// consume the (
 		context.next();
@@ -179,9 +185,48 @@ impl SaphTree {
 					' ' | '\n' | '\t'  => {
 						context.next();
 						()
+					},
+					'$' => {
+						let got_idx = SaphTree::parse_stream_idx(context);
+						match got_idx {
+							SaphTree::Error(_) => return got_idx,
+							_ => lst.push(got_idx)
+						}
+					},
+					'a' ... 'z' | 'A' ... 'Z' => {
+						let got_word = SaphTree::parse_word(context);
+						match got_word {
+							SaphTree::Error(_) => return got_word,
+							_ => lst.push(got_word)
+						}
+					},
+					'0' ... '9' => {
+						let num_got = SaphTree::parse_number(context, true);
+						match num_got {
+							SaphTree::Error(_) => return num_got,
+							_ => lst.push(num_got)
+						}						
+					},
+					'-' => {
+						context.next();
+						match context.peek() {
+							Some(ch) => match ch {
+							'0' ... '9' =>  {
+								let num_got = SaphTree::parse_number(context, false);
+								match num_got {
+									SaphTree::Error(_) => return num_got,
+									_ => lst.push(num_got)
+								    }	
+							    },
+							_ => return SaphTree::Error(format!("Expected '0' ... '9', got '-{}'", context.next().unwrap()))
+						    },
+						    None => return SaphTree::Error(String::from("Expected '0' ... '9', got end of input."))
+						}
+					},
+					')' => {
+						context.next();
+						break
 					}
-					'0' ... '9' => (),
-					'-' => (),
 					_ => return SaphTree::Error(format!("Expected list member, got '{}'", context.next().unwrap()))
 				},
 				// We shouldn't run out of chars before )
@@ -189,6 +234,46 @@ impl SaphTree {
 			}
 		}
 		SaphTree::List(lst)
+	}
+
+	fn parse_stream_idx(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		match context.next() {
+			Some(ch) => if ch != '$' {
+				return SaphTree::Error(format!("Expected index sign '$', got '{}'", ch))
+			},
+			None => return SaphTree::Error(String::from("Expected index sign '$', got end of input"))
+		}
+		let mut idx = String::new();
+		loop {
+			match context.peek() {
+				Some(ch) => match ch {
+					' ' | '\n' | '\t' | ')' => break,
+					'0' ... '9' => idx.push(context.next().unwrap()),
+					_ => return SaphTree::Error(format!("Expected index: '0' ... '9' or list end ')', found '{}'", context.next().unwrap()))
+				},
+				None => return SaphTree::Error(String::from("Expected '0' ... '9' or list end ')', found end of input"))
+			}
+		}
+
+		match idx.parse::<usize>() {
+			Ok(idn) => SaphTree::StreamIdx(idn),
+			Err(_) => return SaphTree::Error(format!("Found invalid index literal: '{}'", idx))
+		}
+	}
+
+	fn parse_word(context:&mut std::iter::Peekable<std::str::Chars>) -> Self {
+		let mut word  = String::new();
+		loop {
+			match context.peek() {
+				Some(ch) => match ch {
+					' ' | '\n' | '\t' | ')' => break,
+					'a' ... 'z' | 'A' ... 'Z' => word.push(context.next().unwrap()),
+					_ => return SaphTree::Error(format!("Expected word [a-zA-Z] or list end ')', found '{}'", context.next().unwrap()))
+				},
+				None => return SaphTree::Error(String::from("Expected word [a-zA-Z] or list end ')', found end of input"))
+			}
+		}
+		SaphTree::Word(word)
 	}
 }
 
