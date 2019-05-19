@@ -194,8 +194,6 @@ impl SaphTree {
 			},
 			None => return SaphTree::Error(String::from("Expected list start '(', got end of input"))
 		}
-		// consume the (
-		context.next();
 		let mut lst:Vec<SaphTree> = vec![];
 		loop {
 			match context.peek() {
@@ -211,7 +209,7 @@ impl SaphTree {
 							_ => lst.push(got_idx)
 						}
 					},
-					'a' ... 'z' | 'A' ... 'Z' => {
+					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/' => {
 						let got_word = SaphTree::parse_word(context);
 						match got_word {
 							SaphTree::Error(_) => return got_word,
@@ -285,10 +283,10 @@ impl SaphTree {
 			match context.peek() {
 				Some(ch) => match ch {
 					' ' | '\n' | '\t' | ')' => break,
-					'a' ... 'z' | 'A' ... 'Z' => word.push(context.next().unwrap()),
-					_ => return SaphTree::Error(format!("Expected word [a-zA-Z] or list end ')', found '{}'", context.next().unwrap()))
+					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/'  => word.push(context.next().unwrap()),
+					_ => return SaphTree::Error(format!("Expected word or list end ')', found '{}'", context.next().unwrap()))
 				},
-				None => return SaphTree::Error(String::from("Expected word [a-zA-Z] or list end ')', found end of input"))
+				None => return SaphTree::Error(String::from("Expected word or list end ')', found end of input"))
 			}
 		}
 		SaphTree::Word(word)
@@ -321,6 +319,28 @@ mod parse_tests {
    	   	   SaphTree::Error(e) => panic!("test failed got err {}", e),
    	   	   _ => panic!("Test parse_stream_idx failed")
    	   }
+   }
+
+   #[test]
+   fn parse_list_works() {
+   	  let code = String::from("(foo 3)");
+   	  match SaphTree::parse_list(&mut code.chars().peekable()) {
+   	  	  SaphTree::List(lst) => {
+   	  	  	   match &lst[0] {
+   	  	  	   	   SaphTree::Word(w) => assert_eq!(w.as_str(), "foo"),
+   	  	  	   	   SaphTree::Error(e) => panic!("Test failed got err {}", e),
+   	  	  	   	   _ => panic!("parsing first list member failed")
+   	  	  	   }
+   	  	  	   match &lst[1] {
+   	  	  	   	   SaphTree::Number(n) => assert_eq!(*n, 3 as f32),
+   	  	  	   	   SaphTree::Error(e) => panic!("Test failed got err {}", e),
+   	  	  	   	   _ => panic!("parsing second list member failed")
+   	  	  	   }
+   	  	  },
+   	  	  SaphTree::Error(e) => panic!("test failed got err {}", e),
+   	   	   _ => panic!("Test parse_list failed")
+
+   	  }
    }
 
    #[test]
