@@ -234,6 +234,7 @@ impl SaphTree {
 									_ => lst.push(num_got)
 								    }	
 							    },
+							' ' | '\n' | '\t' | ')' => lst.push(SaphTree::Word(String::from("-"))),
 							_ => return SaphTree::Error(format!("Expected '0' ... '9', got '-{}'", context.next().unwrap()))
 						    },
 						    None => return SaphTree::Error(String::from("Expected '0' ... '9', got end of input."))
