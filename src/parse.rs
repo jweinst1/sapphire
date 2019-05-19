@@ -209,7 +209,7 @@ impl SaphTree {
 							_ => lst.push(got_idx)
 						}
 					},
-					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/' => {
+					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/' | '%' => {
 						let got_word = SaphTree::parse_word(context);
 						match got_word {
 							SaphTree::Error(_) => return got_word,
@@ -284,7 +284,7 @@ impl SaphTree {
 			match context.peek() {
 				Some(ch) => match ch {
 					' ' | '\n' | '\t' | ')' => break,
-					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/'  => word.push(context.next().unwrap()),
+					'a' ... 'z' | 'A' ... 'Z' | '+' | '*' | '/' | '%'  => word.push(context.next().unwrap()),
 					_ => return SaphTree::Error(format!("Expected word or list end ')', found '{}'", context.next().unwrap()))
 				},
 				None => return SaphTree::Error(String::from("Expected word or list end ')', found end of input"))
@@ -319,6 +319,16 @@ mod parse_tests {
    	   	   SaphTree::StreamIdx(i) => assert_eq!(i, 10),
    	   	   SaphTree::Error(e) => panic!("test failed got err {}", e),
    	   	   _ => panic!("Test parse_stream_idx failed")
+   	   }
+   }
+
+   #[test]
+   fn parse_word_works() {
+   	   let code = String::from("++ ");
+   	   match SaphTree::parse_word(&mut code.chars().peekable()) {
+   	   	   SaphTree::Word(w) => assert_eq!(w.as_str(), "++"),
+   	  	   SaphTree::Error(e) => panic!("Test failed got err {}", e),
+   	  	   _ => panic!("parsing word test failed")
    	   }
    }
 
